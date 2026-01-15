@@ -4,6 +4,7 @@ import {
   For as SolidFor,
   createEffect,
   onCleanup,
+  createSignal,
   type JSX,
   type Component,
   type Accessor,
@@ -44,7 +45,7 @@ export const For = <T, U extends JSX.Element>(
 // 2. Component Composition
 export const Child = <P extends object>(component: Component<P>, props?: P, children?: JSX.Element): JSX.Element =>
   createComponent(component, {
-    ...(props || {}),
+    ...props,
     get children() {
       return children
     }
@@ -53,3 +54,19 @@ export const Child = <P extends object>(component: Component<P>, props?: P, chil
 // 3. Effects & Lifecycle
 export const Effect = <T>(fn: (v: T | undefined) => T) => createEffect(fn)
 export const Cleanup = (fn: () => void) => onCleanup(fn)
+
+// 4. State Management
+export const State = <T>(value: T, options?: { equals?: false | ((prev: T, next: T) => boolean); name?: string }) =>
+  createSignal(value, options)
+
+const globalSignals = new Map<string, ReturnType<typeof createSignal<any>>>()
+
+export const Global = <T>(key: string, initial?: T) => {
+  if (!globalSignals.has(key)) {
+    if (initial === undefined) {
+      throw new Error(`Global state '${key}' not found and no initial value provided.`)
+    }
+    globalSignals.set(key, createSignal<T>(initial))
+  }
+  return globalSignals.get(key) as ReturnType<typeof createSignal<T>>
+}
