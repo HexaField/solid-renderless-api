@@ -1,0 +1,12 @@
+import type { Component } from 'solid-js'
+
+const App: Component = () => {
+  return (
+    <p class="py-20 text-center text-4xl text-green-700">
+      This is a <a href="https://www.solidjs.com/">Solid</a> + <a href="https://tailwindcss.com/">Tailwind</a> +{' '}
+      <a href="https://www.typescriptlang.org/">Typescript</a>!
+    </p>
+  )
+}
+
+export default App
