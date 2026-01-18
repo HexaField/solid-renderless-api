@@ -1,77 +1,94 @@
-# [Solid](https://solidjs.com) + [Tailwind CSS](https://tailwindcss.com) + [TypeScript](https://www.typescriptlang.org) + [Vite](https://vitejs.dev) Starter
+# Solid Renderless API
 
-A starter template for Solid that comes preconfigured with [Vite](https://vitejs.dev), [TypeScript](https://www.typescriptlang.org), [Tailwind CSS](https://tailwindcss.com), [ESLint](https://eslint.org), [Prettier](https://prettier.io) and HMR.
+A minimal, zero-cost abstraction library for building **Reactive Logic Trees** using SolidJS.
 
-## Features
+This library allows you to build purely logical component trees that participate in Solid's **Reactive Graph (Ownership Tree)** to manage process lifecycles, state machines, and side effects without the overhead of UI rendering or VDOM reconciliation.
 
-- ⚡️ [Solid](https://solidjs.com) & [Vite](https://vitejs.dev) - Simple and performant reactivity for building user interfaces.
+## The Conccept
 
-- 🎨 [Tailwind CSS](https://tailwindcss.com) - A utility-first CSS framework for rapid UI development.
+In traditional component frameworks, components are mechanisms for organizing pixels ("Space"). This library treats components as mechanisms for organizing logic and lifecycle ("Time").
 
-- 💪 [TypeScript](https://www.typescriptlang.org) - it's JavaScript with syntax for types.
+*   **Renderless Components:** Components that return `null`. They exist solely to hook into the mounting/unmounting lifecycle of the framework.
+*   **Zero-Cost Abstraction:** Since SolidJS has no Virtual DOM, a "renderless component" is just a function call that creates a reactive scope. There is no diffing overhead.
+*   **Services/Managers:** Use components as ephemeral micro-services that spin up, perform a job, and clean up automatically when their parent condition changes.
 
-- 👌 [ESLint](https://eslint.org) + [Prettier](https://prettier.io) - ESLint find problems in your code and Prettier format your code for an easy life.
+## API Reference
 
-<br>
+### 1. Control Flow
 
-## Try it now!
+Replaces JSX control flow with pure function calls.
 
-### GitHub Template
+```typescript
+import { Show, For } from './lib/solid'
 
-[Create a repo from this template on GitHub](https://github.com/AR10Dev/solid-tailwind-ts-vite/generate)
+// Conditional Logic
+Show(
+  isValid, 
+  () => console.log("Valid state active"),
+  () => console.log("Invalid state fallback")
+)
 
-### Clone to local
-
-If you prefer to do it manually with the cleaner git history
-
-```bash
-npx degit AR10Dev/solid-tailwind-ts-vite my-app
-cd my-app
-npm install # or pnpm install or yarn install
+// Iteration
+For(users, (user) => {
+  Effect(() => console.log("Syncing user:", user.id))
+  Cleanup(() => console.log("Stop syncing:", user.id))
+})
 ```
 
-## Checklist
+### 2. State & Lifecycle
 
-When you use this template, follow the checklist to update your info properly
+Wrappers for Solid's primitives to keep syntax consistent.
 
-- [ ] Rename `name`, `version` and `author` field in `package.json`
-- [ ] Change the author name in `LICENSE`
-- [ ] Clean up the READMEs
-- [ ] Optional: Remove the `.github` folder which contains the github actions and the renovate config
-- [ ] Enjoy 😉
+```typescript
+import { State, Global, Effect, Cleanup } from './lib/solid'
 
-## Usage
+// Local State (createSignal)
+const [count, setCount] = State(0)
 
-### Development
+// Global Shared State (Singleton by key)
+const [theme, setTheme] = Global('theme', 'dark')
 
-```bash
-npm run dev # or pnpm dev or yarn dev
+// Side Effects
+Effect(() => {
+  console.log("Count is now", count())
+})
+
+// Lifecycle Teardown
+Cleanup(() => {
+  console.log("Component scope destroying...")
+})
 ```
 
-Runs the app in the development mode.<br> Open [http://localhost:5173](http://localhost:5173) to view it in the browser.
+### 3. Composition
 
-The page will reload automatically if you make edits.<br>
+**`Child`** allows you to nest other logic components, maintaining the ownership tree for context and disposal.
 
-### Build
+```typescript
+import { Child } from './lib/solid'
 
-```bash
-npm run build # or pnpm build or yarn build
+Child(MyWorkerComponent, { url: '/api/stream' })
 ```
 
-Builds the app for production to the `dist` folder.<br> It correctly bundles Solid in production mode and optimizes the build for the best performance.
+## Example: Polling Service
 
-The build is minified and the filenames include the hashes.<br> Your app is ready to be deployed!
+This "component" manages a polling interval. It doesn't render anything, but it starts when mounted and stops cleanly when unmounted/disposed.
 
-## Deployment
+```typescript
+const Poller = (props) => {
+  Effect(() => {
+    const id = setInterval(() => {
+      console.log(`Polling ${props.url}...`)
+    }, 1000)
 
-You can deploy the `dist` folder to any static host provider (netlify, surge, now, etc.)
+    Cleanup(() => clearInterval(id))
+  })
+}
 
-## Variations
-
-The following list provides maintained templates variations with different preferences and feature sets.
-
-- [**solid-tailwind-ts-vite-router**](https://github.com/AR10Dev/solid-tailwind-ts-vite-router) - Based on this template but add support to file-system based routing
-
-- [**tauri-solid-ts-tailwind-vite**](https://github.com/AR10Dev/tauri-solid-ts-tailwind-vite) - Based on [solid-tailwind-ts-vite-router](https://github.com/AR10Dev/solid-tailwind-ts-vite-router) template, it offers the integration with Tauri
-
-- [solidjs/templates](https://github.com/solidjs/templates) - Solid templates created by Solid Team
+// Usage in your logic tree
+const AppLogic = () => {
+  const [isActive, setActive] = State(false)
+  
+  // The Poller only exists (and polls) when isActive is true
+  Show(isActive, () => Child(Poller, { url: 'https://api.example.com' }))
+}
+```
