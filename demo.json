@@ -1,0 +1,94 @@
+{
+  "def": [
+    "timer",
+    { "$state": 0 },
+    {
+      "__lazy": true,
+      "rule": [
+        { "$global": ["app_status", "initializing"] },
+
+        {
+          "$effect": {
+            "__lazy": true,
+            "rule": {
+              "log": { "cat": ["App Status changed to: ", { "call": [{ "$global": ["app_status"] }] }] }
+            }
+          }
+        },
+
+        {
+          "$show": [
+            { "__lazy": true, "rule": { "==": [{ "call": [{ "$global": ["app_status"] }] }, "running"] } },
+            {
+              "__lazy": true,
+              "rule": {
+                "and": [
+                  { "log": "--- Timer Logic Mounted ---" },
+                  {
+                    "$effect": {
+                      "__lazy": true,
+                      "rule": {
+                        "def": [
+                          "id",
+                          {
+                            "call": [
+                              { "var": "setInterval" },
+                              {
+                                "lambda": {
+                                  "__lazy": true,
+                                  "rule": {
+                                    "and": [
+                                      {
+                                        "log": {
+                                          "cat": ["Timer Tick: ", { "+": [{ "call": [{ "var": "timer" }] }, 1] }]
+                                        }
+                                      },
+                                      { "$set": [{ "var": "timer" }, { "+": [{ "call": [{ "var": "timer" }] }, 1] }] }
+                                    ]
+                                  }
+                                }
+                              },
+                              200
+                            ]
+                          },
+                          {
+                            "__lazy": true,
+                            "rule": {
+                              "$cleanup": {
+                                "__lazy": true,
+                                "rule": {
+                                  "and": [
+                                    { "log": "--- Cleaning up Timer ---" },
+                                    { "call": [{ "var": "clearInterval" }, { "var": "id" }] }
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            { "__lazy": true, "rule": { "log": "System Idle (Fallback)" } }
+          ]
+        },
+
+        {
+          "$effect": {
+            "__lazy": true,
+            "rule": {
+              "if": [
+                { "==": [{ "call": [{ "var": "timer" }] }, 5] },
+                { "$set": [{ "$global": ["app_status"] }, "finished"] },
+                null
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

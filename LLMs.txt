@@ -1,0 +1,114 @@
+# Solid Renderless API & JSON Logic Interpreter
+
+## Project Overview
+This repository implements a "Headless" Reactive Logic Engine using SolidJS. It decouples Solid's fine-grained reactivity (Signals, Effects, Memos) from the DOM, allowing developers to build complex, event-driven state machines and logic trees that run in any environment (Node.js, Web Workers, etc.).
+
+## Core Philosophy
+- **Renderless:** Components return `void` or `undefined` instead of DOM nodes.
+- **Reactive Graph:** Uses SolidJS's ownership tree to manage lifecycle (setup/teardown) automatically.
+- **Synchronous Execution:** Uses `createComputed` instead of `createEffect` to ensure logic executes immediately and predictably in a headless environment.
+
+## Key Files & Modules
+
+### 1. `lib/solid.ts` (Reactive Primitives)
+Wraps SolidJS primitives for headless usage.
+- `State<T>(initial)`: Wrapper for `createSignal`. Returns `[get, set]`.
+- `Global<T>(key, initial)`: Singleton state shared by key across the application.
+- `Effect(fn)`: Wrapper for `createComputed`. Runs synchronously when dependencies change.
+- `Cleanup(fn)`: Wrapper for `onCleanup`.
+- `Show(when, children, fallback)`: Reactive control flow. Executes `children` function if truthy.
+- `For(list, children)`: Reactive iteration. Efficiently maps data to logic scopes.
+
+### 2. `lib/Interpreter.ts` (JSON Logic Engine)
+An extended `json-logic-js` interpreter that compiles JSON rules into a live SolidJS reactive graph.
+
+**Function:** `runLogic(json, context)`
+- Wraps execution in `createRoot`.
+- Returns `{ result, dispose }`.
+
+## JSON Logic DSL (Domain Specific Language)
+
+The interpreter adds custom operators to standard JSON Logic.
+
+### Lazy Evaluation Protocol
+Standard JSON Logic evaluates all arguments eagerly. To support Control Flow (Effects, Conditionals), this engine uses a "Lazy Node" protocol.
+**Syntax:** `{ "__lazy": true, "rule": <Any Valid Logic> }`
+
+### Custom Operators
+
+| Operator | Syntax / Artifact | Description |
+| :--- | :--- | :--- |
+| **$state** | `{"$state": <initial>}` | Creates a local signal. Returns a getter function property `.set(val)`. |
+| **$global** | `{"$global": ["key", <initial>]}` | Accesses (or creates) a shared global signal. |
+| **$set** | `{"$set": [<ref>, <val>]}` | Calls `.set(<val>)` on the provided reference (usually a `$state` or `$global` getter). |
+| **$effect** | `{"$effect": <LazyNode>}` | Wraps the rule inside a `Solid.Effect`. Re-runs when signals accessed inside change. |
+| **$cleanup** | `{"$cleanup": <LazyNode>}` | Registers a teardown callback for the current scope. |
+| **$show** | `{"$show": [<cond>, <LazyNode>, <LazyNode>]}` | Conditional logic. Only the active branch's rule is executed/mounted. |
+| **$for** | `{"$for": [<array>, <LazyNode>]}` | Iteration. The LazyNode is executed for *each* item. Context adds `item` and `index`. |
+| **def** | `{"def": ["varName", <val>, <rule>]}` | Scopes a variable to the current context chain. |
+| **call** | `{"call": [<fnRef>, ...args]}` | Executes a function reference (e.g., from `context` or a signal getter). |
+
+## Usage Examples for LLMs
+
+### Scenario: Creating a Counter with Side Effects
+
+**TypeScript Equivalent:**
+```typescript
+const [count, setCount] = State(0);
+
+Effect(() => {
+  console.log("Count:", count());
+});
+
+// Increment
+setCount(count() + 1);
+```
+
+**JSON Logic Equivalent:**
+```json
+{
+  "def": [
+    "count", 
+    { "$state": 0 }, 
+    { 
+      "rule": [
+        { 
+          "$effect": {
+            "__lazy": true,
+            "rule": { "log": { "cat": ["Count: ", { "call": [{"var": "count"}] }] } }
+          }
+        },
+        { 
+          "$set": [
+            { "var": "count" }, 
+            { "+": [{ "call": [{"var": "count"}] }, 1] }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Scenario: Conditional Timer
+
+```json
+{
+  "$show": [
+    { "==": [{ "call": [{"$global": ["isRunning"]}] }, true] },
+    { 
+      "__lazy": true, 
+      "rule": { 
+        "$effect": {
+          "__lazy": true,
+          "rule": {
+             "def": ["id", { "call": ["setInterval", ... ] }, 
+             { "$cleanup": { "__lazy": true, "rule": { "call": ["clearInterval", { "var": "id" }] } } } ]
+          }
+        }
+      }
+    },
+    { "__lazy": true, "rule": { "log": "Timer Stopped" } }
+  ]
+}
+```

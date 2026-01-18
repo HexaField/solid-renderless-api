@@ -1,72 +1,91 @@
 import {
-  createComponent,
-  Show as SolidShow,
-  For as SolidFor,
-  createEffect,
+  createComputed,
   onCleanup,
   createSignal,
-  type JSX,
-  type Component,
   type Accessor,
-  type ComponentProps
+  type JSX,
+  type SignalOptions,
+  type Signal
 } from 'solid-js'
 
-// Helper: ensures reactive values are accessed as functions
 const r = <T>(val: T | Accessor<T>): Accessor<T> => (typeof val === 'function' ? (val as Accessor<T>) : () => val)
 
-// 1. Control Flow
-// We accept children as Element or Callback (Keyed)
+/**
+ * Control Flow: Show
+ * Renders `children` when `when` is truthy, otherwise renders `fallback`.
+ * Since this is headless, it executes the children function instead of returning DOM nodes.
+ */
 export const Show = <T>(
   when: T | Accessor<T>,
   children: JSX.Element | ((item: NonNullable<T>) => JSX.Element),
   fallback?: JSX.Element | (() => JSX.Element)
-): JSX.Element =>
-  createComponent(SolidShow, {
-    get when() {
-      return r(when)()
-    },
-    get fallback() {
-      return fallback
-    },
-    children
-  } as ComponentProps<typeof SolidShow>)
-
-export const For = <T, U extends JSX.Element>(
-  each: readonly T[] | Accessor<readonly T[] | undefined | null> | undefined | null,
-  children: (item: T, index: Accessor<number>) => U
-): JSX.Element =>
-  createComponent(SolidFor, {
-    get each() {
-      return r(each)()
-    },
-    children
+): JSX.Element => {
+  const condition = r(when)
+  createComputed(() => {
+    const c = condition()
+    if (c) {
+      if (typeof children === 'function') {
+        ;(children as Function).length > 0 ? (children as Function)(c) : (children as Function)()
+      }
+    } else {
+      if (typeof fallback === 'function') (fallback as Function)()
+    }
   })
+  return undefined as unknown as JSX.Element
+}
 
-// 2. Component Composition
-export const Child = <P extends object>(component: Component<P>, props?: P, children?: JSX.Element): JSX.Element =>
-  createComponent(component, {
-    ...props,
-    get children() {
-      return children
+/**
+ * Control Flow: For
+ * Iterates over a list and executes `children` for each item.
+ */
+export const For = <T>(
+  each: readonly T[] | Accessor<readonly T[] | undefined | null> | undefined | null,
+  children: (item: T, index: Accessor<number>) => void
+): JSX.Element => {
+  const list = r(each)
+  createComputed(() => {
+    const items = list() || []
+    if (Array.isArray(items)) {
+      items.forEach((item: T, index: number) => {
+        children(item, () => index)
+      })
     }
-  } as unknown as P)
+  })
+  return undefined as unknown as JSX.Element
+}
 
-// 3. Effects & Lifecycle
-export const Effect = <T>(fn: (v: T | undefined) => T) => createEffect(fn)
-export const Cleanup = (fn: () => void) => onCleanup(fn)
+/**
+ * Reactivity: Effect
+ * wrapper for createComputed (synchronous effect for headless)
+ */
+export const Effect = <T>(fn: (v: T) => T, value?: T): void => {
+  createComputed(fn as any, value)
+}
 
-// 4. State Management
-export const State = <T>(value: T, options?: { equals?: false | ((prev: T, next: T) => boolean); name?: string }) =>
-  createSignal(value, options)
+/**
+ * Reactivity: Cleanup
+ * Registers a cleanup function to run when the current reactive scope is disposed.
+ */
+export const Cleanup = (fn: () => void): void => {
+  onCleanup(fn)
+}
 
-const globalSignals = new Map<string, ReturnType<typeof createSignal<any>>>()
+/**
+ * State: State
+ * Creates a local reactive state (signal).
+ */
+export const State = <T>(value: T, options?: SignalOptions<T>): Signal<T> => createSignal(value, options)
 
-export const Global = <T>(key: string, initial?: T) => {
+const globalSignals = new Map<string, Signal<any>>()
+
+/**
+ * State: Global
+ * Accesses or creates a shared global signal by key.
+ */
+export const Global = <T>(key: string, initial?: T): Signal<T> => {
   if (!globalSignals.has(key)) {
-    if (initial === undefined) {
-      throw new Error(`Global state '${key}' not found and no initial value provided.`)
-    }
-    globalSignals.set(key, createSignal<T>(initial))
+    if (initial === undefined) throw new Error(`Global state '${key}' not found`)
+    globalSignals.set(key, createSignal(initial))
   }
-  return globalSignals.get(key) as ReturnType<typeof createSignal<T>>
+  return globalSignals.get(key) as Signal<T>
 }

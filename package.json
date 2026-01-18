@@ -1,24 +1,30 @@
 {
-  "name": "solid-tailwind-ts-vite-template",
-  "version": "1.1.0",
+  "name": "solid-renderless-interpreter",
+  "version": "1.0.0",
   "license": "MIT",
-  "author": "AR10",
   "type": "module",
+  "main": "lib/Interpreter.ts",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "preview": "vite preview",
-    "lint": "oxlint --fix",
-    "format": "oxfmt --write",
-    "test": "vitest run"
+    "test": "vitest run",
+    "demo": "NODE_OPTIONS='--conditions browser' npx tsx src/main.ts",
+    "format": "oxfmt --write .",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint --fix ."
   },
   "dependencies": {
+    "json-logic-js": "^2.0.5",
     "solid-js": "1.9.10"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.1.18",
+    "@types/json-logic-js": "^2.0.8",
+    "@types/node": "^25.0.9",
     "jsdom": "^27.4.0",
     "lightningcss": "1.30.2",
+    "oxfmt": "^0.24.0",
+    "oxlint": "^1.39.0",
     "tailwindcss": "4.1.18",
     "typescript": "5.9.3",
     "vite": "7.3.1",
