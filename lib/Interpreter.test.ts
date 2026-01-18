@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createRoot, getOwner } from 'solid-js'
-import { runLogic } from './Interpreter'
+import { runLogic } from './interpreter'
 import * as solidApi from './solid'
 
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0))
 
-describe('Interpreter', () => {
+describe('interpreter', () => {
   it('should run logic inside a createRoot', async () => {
     let owner: any
     runLogic(

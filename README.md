@@ -92,7 +92,7 @@ The library includes an enhanced `json-logic-js` interpreter customized for reac
 Use `runLogic` to execute a JSON Logic tree within a reactive root.
 
 ```typescript
-import { runLogic } from './lib/Interpreter'
+import { runLogic } from './lib/interpreter'
 
 const logic = {
   "$state": 0

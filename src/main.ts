@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { runLogic } from '../lib/Interpreter'
+import { runLogic } from '../lib/interpreter'
 import { Global } from '../lib/solid'
 
 async function main() {

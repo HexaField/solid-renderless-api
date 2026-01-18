@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "license": "MIT",
   "type": "module",
-  "main": "lib/Interpreter.ts",
+  "main": "lib/interpreter.ts",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
