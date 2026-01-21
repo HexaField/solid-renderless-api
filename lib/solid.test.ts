@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createRoot } from 'solid-js'
-import { Show, For, Effect, Cleanup, Global, State } from './solid'
+import { Show, For, Effect, Cleanup, Global, State, resetGlobalStates } from './solid'
 
 // Helper to wait for Solid's microtask queue (effects)
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0))
@@ -103,6 +103,30 @@ describe('Renderless API', () => {
 
       expect(output).toContain('remove-b')
       expect(output).toContain('c-1')
+
+      dispose()
+    })
+  })
+
+  it('resetGlobalStates: clears all global signals', () => {
+    createRoot((dispose) => {
+      // Set a global
+      Global('persist-test', 123)
+
+      // Verify it is there
+      expect(Global<number>('persist-test')[0]()).toBe(123)
+
+      // Reset
+      resetGlobalStates()
+
+      // Expect error on retrieval
+      expect(() => {
+        Global('persist-test')
+      }).toThrow()
+
+      // Should be able to recreate
+      Global('persist-test', 456)
+      expect(Global<number>('persist-test')[0]()).toBe(456)
 
       dispose()
     })

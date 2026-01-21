@@ -89,3 +89,7 @@ export const Global = <T>(key: string, initial?: T): Signal<T> => {
   }
   return globalSignals.get(key) as Signal<T>
 }
+
+export const resetGlobalStates = (): void => globalSignals.clear()
+
+
