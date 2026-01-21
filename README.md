@@ -95,7 +95,7 @@ Use `runLogic` to execute a JSON Logic tree within a reactive root.
 import { runLogic } from './lib/interpreter'
 
 const logic = {
-  "$state": 0
+  $state: 0
 }
 
 const { result, dispose } = runLogic(logic)
@@ -104,7 +104,7 @@ const { result, dispose } = runLogic(logic)
 ### 2. Custom Operators
 
 | Operator | Usage | Description |
-| :--- | :--- | :--- |
+| :-- | :-- | :-- |
 | **$state** | `{"$state": <initial>}` | Creates a local signal. Returns getter (with .set attached). |
 | **$global** | `{"$global": ["key", <initial>]}` | Accesses or creates a shared global signal. |
 | **$set** | `{"$set": [<ref>, <value>]}` | Updates a signal value. |
@@ -116,14 +116,17 @@ const { result, dispose } = runLogic(logic)
 | **call** | `{"call": [<fn>, ...args]}` | Call a function ref (e.g. from context). |
 
 ### 3. Lazy Evaluation
+
 Control flow operators (`$show`, `$for`, `$effect`) require their bodies to be wrapped in a "Lazy Node" to prevent immediate execution by the JSON parser.
 
 **Lazy Node Syntax:**
+
 ```json
 { "__lazy": true, "rule": { ... your logic ... } }
 ```
 
 **Example:**
+
 ```json
 {
   "$show": [

@@ -10,6 +10,7 @@
     "test": "vitest run",
     "demo": "NODE_OPTIONS='--conditions browser' npx tsx src/main.ts",
     "format": "oxfmt --write .",
+    "check": "oxfmt --check . && tsc --noEmit",
     "lint": "oxlint .",
     "lint:fix": "oxlint --fix ."
   },

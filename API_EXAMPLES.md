@@ -19,18 +19,18 @@ This document demonstrates the capabilities of the `solid-renderless-api` librar
 Use `State` to create local reactive signals. This is a wrapper around SolidJS `createSignal`.
 
 ```typescript
-import { State } from './lib/solid';
+import { State } from './lib/solid'
 
 // Create a reactive state
-const [count, setCount] = State(0);
+const [count, setCount] = State(0)
 
-console.log(count()); // 0
+console.log(count()) // 0
 
-setCount(1);
-console.log(count()); // 1
+setCount(1)
+console.log(count()) // 1
 
 // Functional updates
-setCount((prev) => prev + 1);
+setCount((prev) => prev + 1)
 ```
 
 ---
@@ -40,21 +40,21 @@ setCount((prev) => prev + 1);
 Use `Effect` to run side effects purely in response to state changes. This is a synchronous wrapper around `createComputed`.
 
 ```typescript
-import { State, Effect } from './lib/solid';
+import { State, Effect } from './lib/solid'
 
-const [userId, setUserId] = State<number | null>(null);
+const [userId, setUserId] = State<number | null>(null)
 
 Effect(() => {
-  const id = userId();
+  const id = userId()
   if (id) {
-    console.log(`User Logged In: ${id}`);
+    console.log(`User Logged In: ${id}`)
   } else {
-    console.log('Waiting for user...');
+    console.log('Waiting for user...')
   }
-});
+})
 
-setUserId(101); // Logs: "User Logged In: 101"
-setUserId(null); // Logs: "Waiting for user..."
+setUserId(101) // Logs: "User Logged In: 101"
+setUserId(null) // Logs: "Waiting for user..."
 ```
 
 ---
@@ -66,20 +66,20 @@ setUserId(null); // Logs: "Waiting for user..."
 ### Basic Toggle
 
 ```typescript
-import { State, Show } from './lib/solid';
+import { State, Show } from './lib/solid'
 
-const [isEnabled, setEnabled] = State(false);
+const [isEnabled, setEnabled] = State(false)
 
 Show(
   isEnabled,
   // Executed when true
-  () => console.log("System is ONLINE"),
+  () => console.log('System is ONLINE'),
   // Executed when false (Fallback)
-  () => console.log("System is OFFLINE")
-);
+  () => console.log('System is OFFLINE')
+)
 
-setEnabled(true);  // Logs: "System is ONLINE"
-setEnabled(false); // Logs: "System is OFFLINE"
+setEnabled(true) // Logs: "System is ONLINE"
+setEnabled(false) // Logs: "System is OFFLINE"
 ```
 
 ### Accessing the Truthy Value
@@ -87,18 +87,18 @@ setEnabled(false); // Logs: "System is OFFLINE"
 The `children` callback receives the non-nullable value of the condition.
 
 ```typescript
-import { State, Show } from './lib/solid';
+import { State, Show } from './lib/solid'
 
-const [data, setData] = State<{ name: string } | null>(null);
+const [data, setData] = State<{ name: string } | null>(null)
 
 Show(
   data,
   // 'item' is strictly types as { name: string } here
   (item) => console.log(`Processing: ${item.name}`),
-  () => console.log("No data available")
-);
+  () => console.log('No data available')
+)
 
-setData({ name: 'Task A' }); // Logs: "Processing: Task A"
+setData({ name: 'Task A' }) // Logs: "Processing: Task A"
 ```
 
 ---
@@ -108,23 +108,23 @@ setData({ name: 'Task A' }); // Logs: "Processing: Task A"
 `For` is used for efficient list iteration. It reacts to array changes and executes its children function for each item.
 
 ```typescript
-import { State, For } from './lib/solid';
+import { State, For } from './lib/solid'
 
-const [users, setUsers] = State(['Alice', 'Bob']);
+const [users, setUsers] = State(['Alice', 'Bob'])
 
 // The callback runs for each item.
 // Note: 'index' is an Accessor function to track position changes.
 For(users, (user, index) => {
-  console.log(`Added user: ${user}`);
+  console.log(`Added user: ${user}`)
 
   // You can create effects per-item
   Effect(() => {
-    console.log(`${user} is at index ${index()}`);
-  });
-});
+    console.log(`${user} is at index ${index()}`)
+  })
+})
 
 // Adding a user triggers the callback for ONLY the new item
-setUsers([...users(), 'Charlie']);
+setUsers([...users(), 'Charlie'])
 // Logs:
 // "Added user: Charlie"
 // "Charlie is at index 2"
@@ -137,20 +137,20 @@ setUsers([...users(), 'Charlie']);
 `Global` provides a shared state mechanism using keys. Useful for sharing data across decoupled parts of your application without prop drilling.
 
 ```typescript
-import { Global, Effect } from './lib/solid';
+import { Global, Effect } from './lib/solid'
 
 // Module A: Defines the global
-const [theme, setTheme] = Global('app_theme', 'light');
+const [theme, setTheme] = Global('app_theme', 'light')
 
 // Module B: Consumes the global (somewhere else)
 // If the global exists, usage matches the existing signal.
-const [currentTheme] = Global<string>('app_theme');
+const [currentTheme] = Global<string>('app_theme')
 
 Effect(() => {
-  console.log(`Theme switched to: ${currentTheme()}`);
-});
+  console.log(`Theme switched to: ${currentTheme()}`)
+})
 
-setTheme('dark'); // Logs: "Theme switched to: dark"
+setTheme('dark') // Logs: "Theme switched to: dark"
 ```
 
 ---
@@ -160,27 +160,24 @@ setTheme('dark'); // Logs: "Theme switched to: dark"
 `Cleanup` (wrapper for `onCleanup`) allows you to release resources (timers, subscriptions) when a reactive scope (like a `Show` or `For` item) is disposed.
 
 ```typescript
-import { State, Show, Cleanup } from './lib/solid';
+import { State, Show, Cleanup } from './lib/solid'
 
-const [active, setActive] = State(false);
+const [active, setActive] = State(false)
 
-Show(
-  active,
-  () => {
-    console.log("Starting Polling...");
-    const interval = setInterval(() => console.log("Ping..."), 1000);
+Show(active, () => {
+  console.log('Starting Polling...')
+  const interval = setInterval(() => console.log('Ping...'), 1000)
 
-    // This runs when 'active' becomes false
-    Cleanup(() => {
-      console.log("Stopping Polling...");
-      clearInterval(interval);
-    });
-  }
-);
+  // This runs when 'active' becomes false
+  Cleanup(() => {
+    console.log('Stopping Polling...')
+    clearInterval(interval)
+  })
+})
 
-setActive(true);  // Starts pinging
+setActive(true) // Starts pinging
 // ... wait ...
-setActive(false); // Logs "Stopping Polling..." and clears interval
+setActive(false) // Logs "Stopping Polling..." and clears interval
 ```
 
 ---
@@ -190,91 +187,104 @@ setActive(false); // Logs "Stopping Polling..." and clears interval
 This example simulates a **Task Processing System** logic entirely without a UI. It demonstrates `For`, `Show`, `Effect`, and `State` working together.
 
 ```typescript
-import { State, Effect, Show, For, Cleanup, Global } from './lib/solid';
-import { createRoot } from 'solid-js';
+import { State, Effect, Show, For, Cleanup, Global } from './lib/solid'
+import { createRoot } from 'solid-js'
+
+type Task = { id: number; name: string; priority: 'high' | 'low' }
+
+// Component: Individual Task Monitor
+function TaskMonitor(props: { task: Task; index: () => number; onCleanup: () => void }) {
+  // Per-task logic scope
+  Effect(() => {
+    console.log(`[TASK] Monitor: Task #${props.task.id} "${props.task.name}" is in queue at pos ${props.index()}`)
+  })
+
+  // Handle specific priority
+  Show(
+    () => props.task.priority === 'high',
+    () => console.log(`  -> [ALERT] High priority task detected: ${props.task.name}`)
+  )
+
+  // Cleanup if task is removed from list or system stops
+  Cleanup(() => {
+    console.log(`[TASK] Cleanup: Task #${props.task.id} removed or processing stopped.`)
+    props.onCleanup()
+  })
+}
+
+// Component: The Logic Engine
+function ProcessingEngine(props: { tasks: () => Task[]; onTaskProcessed: () => void }) {
+  console.log('[LOGIC] Processing Engine Started')
+
+  // Iterate over tasks
+  For(props.tasks, (task, index) => {
+    TaskMonitor({
+      task,
+      index,
+      onCleanup: props.onTaskProcessed
+    })
+  })
+
+  // Cleanup for the generic engine
+  Cleanup(() => console.log('[LOGIC] Processing Engine Halted'))
+}
 
 // Setup a root to manage disposal
 createRoot((dispose) => {
-
-  type Task = { id: number; name: string; priority: 'high' | 'low' };
-
   // 1. Global Configuration
-  const [systemStatus, setSystemStatus] = Global('system_status', 'IDLE');
+  const [systemStatus, setSystemStatus] = Global('system_status', 'IDLE')
 
   // 2. Local State
-  const [tasks, setTasks] = State<Task[]>([]);
-  const [processedCount, setProcessedCount] = State(0);
+  const [tasks, setTasks] = State<Task[]>([])
+  const [processedCount, setProcessedCount] = State(0)
 
-  console.log("--- System Initialized ---");
+  console.log('--- System Initialized ---')
 
   // 3. React to System Status
   Effect(() => {
-    console.log(`[STATUS CHANGE] System is now: ${systemStatus()}`);
-  });
+    console.log(`[STATUS CHANGE] System is now: ${systemStatus()}`)
+  })
 
   // 4. Main Processing Logic
   // Only process tasks when system is RUNNING
   Show(
     () => systemStatus() === 'RUNNING',
-    () => {
-      console.log("[LOGIC] Processing Engine Started");
-
-      // Iterate over tasks roughly
-      For(tasks, (task, index) => {
-        
-        // Per-task logic scope
-        Effect(() => {
-          console.log(`[TASK] Monitor: Task #${task.id} "${task.name}" is in queue at pos ${index()}`);
-        });
-
-        // Handle specific priority
-        Show(
-          () => task.priority === 'high',
-          () => console.log(`  -> [ALERT] High priority task detected: ${task.name}`)
-        );
-
-        // Cleanup if task is removed from list or system stops
-        Cleanup(() => {
-          console.log(`[TASK] Cleanup: Task #${task.id} removed or processing stopped.`);
-          setProcessedCount(p => p + 1);
-        });
-      });
-
-      // Cleanup for the generic engine
-      Cleanup(() => console.log("[LOGIC] Processing Engine Halted"));
-    },
+    // Mount the engine component
+    () =>
+      ProcessingEngine({
+        tasks,
+        onTaskProcessed: () => setProcessedCount((p) => p + 1)
+      }),
     // Fallback when not RUNNING
-    () => {
-      console.log("[LOGIC] System is paused. Waiting for command.");
-    }
-  );
+    () => console.log('[LOGIC] System is paused. Waiting for command.')
+  )
 
   // --- Simulation ---
 
   // Start System
-  setSystemStatus('RUNNING');
+  setSystemStatus('RUNNING')
 
   // Add Tasks
   setTasks([
     { id: 1, name: 'Database Backup', priority: 'low' },
     { id: 2, name: 'Critical Security Patch', priority: 'high' }
-  ]);
+  ])
 
   // Modify List (swap)
-  console.log("--- Reordering Tasks ---");
-  setTasks((prev) => [prev[1], prev[0]]); 
+  console.log('--- Reordering Tasks ---')
+  setTasks((prev) => [prev[1], prev[0]])
 
   // Remove a task
-  console.log("--- Completing Task #2 ---");
-  setTasks((prev) => prev.filter(t => t.id !== 2));
+  console.log('--- Completing Task #2 ---')
+  setTasks((prev) => prev.filter((t) => t.id !== 2))
 
   // Stop System
-  console.log("--- Stopping System ---");
-  setSystemStatus('STOPPED');
-  
-  // Check stats
-  console.log(`Total processed/removed iterations: ${processedCount()}`);
+  console.log('--- Stopping System ---')
+  setSystemStatus('STOPPED')
 
-  dispose(); // Clean up everything
-});
+  // Check stats
+  console.log(`Total processed/removed iterations: ${processedCount()}`)
+
+  dispose() // Clean up everything
+})
 ```

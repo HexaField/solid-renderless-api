@@ -2,11 +2,14 @@ import {
   createComputed,
   onCleanup,
   createSignal,
+  mapArray,
   type Accessor,
   type JSX,
   type SignalOptions,
   type Signal
 } from 'solid-js'
+
+export type RenderlessElement = JSX.Element | void
 
 const r = <T>(val: T | Accessor<T>): Accessor<T> => (typeof val === 'function' ? (val as Accessor<T>) : () => val)
 
@@ -17,15 +20,19 @@ const r = <T>(val: T | Accessor<T>): Accessor<T> => (typeof val === 'function' ?
  */
 export const Show = <T>(
   when: T | Accessor<T>,
-  children: JSX.Element | ((item: NonNullable<T>) => JSX.Element),
-  fallback?: JSX.Element | (() => JSX.Element)
-): JSX.Element => {
+  children: RenderlessElement | ((item: NonNullable<T>) => RenderlessElement),
+  fallback?: RenderlessElement | (() => RenderlessElement)
+): RenderlessElement => {
   const condition = r(when)
   createComputed(() => {
     const c = condition()
     if (c) {
       if (typeof children === 'function') {
-        ;(children as Function).length > 0 ? (children as Function)(c) : (children as Function)()
+        if ((children as Function).length > 0) {
+          ;(children as Function)(c)
+        } else {
+          ;(children as Function)()
+        }
       }
     } else {
       if (typeof fallback === 'function') (fallback as Function)()
@@ -41,17 +48,14 @@ export const Show = <T>(
 export const For = <T>(
   each: readonly T[] | Accessor<readonly T[] | undefined | null> | undefined | null,
   children: (item: T, index: Accessor<number>) => void
-): JSX.Element => {
+): RenderlessElement => {
   const list = r(each)
-  createComputed(() => {
-    const items = list() || []
-    if (Array.isArray(items)) {
-      items.forEach((item: T, index: number) => {
-        children(item, () => index)
-      })
-    }
+  const mapped = mapArray(list, (item, index) => {
+    children(item, index)
+    return undefined // We don't need to return anything, but mapArray expects a return
   })
-  return undefined as unknown as JSX.Element
+  createComputed(mapped) // Subscribe to trigger updates
+  return undefined as unknown as RenderlessElement
 }
 
 /**
@@ -91,5 +95,3 @@ export const Global = <T>(key: string, initial?: T): Signal<T> => {
 }
 
 export const resetGlobalStates = (): void => globalSignals.clear()
-
-
