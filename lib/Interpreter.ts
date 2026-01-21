@@ -135,6 +135,12 @@ jsonLogic.add_operation('log', function (msg: any) {
   return msg
 })
 
+// Helper: Sequence (run multiple rules, return last result)
+// Usage: { "seq": [ rule1, rule2, ... ] }
+jsonLogic.add_operation('seq', function (...rules: any[]) {
+  return rules[rules.length - 1]
+})
+
 // Helper: Define a local variable in context and run a rule
 // Usage: { "def": ["varName", value, ruleToRun] }
 jsonLogic.add_operation('def', function (name: string, value: any, rule: any) {
